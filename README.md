@@ -28,6 +28,20 @@ npm install
 npm run build
 ```
 
+**To run CLI commands from source (without global install):**
+
+```bash
+node dist/cli.js <command>
+# Example: node dist/cli.js config --set-api-url http://localhost:8384
+```
+
+**Or install globally (makes `opencode-syncthing` available everywhere):**
+
+```bash
+npm install -g .
+# Then you can run: opencode-syncthing <command>
+```
+
 ## Prerequisites
 
 1. **Syncthing installed and running** on all machines you want to sync
@@ -39,9 +53,22 @@ npm run build
 
 ### 1. Configure the plugin
 
+**If globally installed:**
 ```bash
 opencode-syncthing config --set-api-url http://localhost:8384
 opencode-syncthing config --set-api-key YOUR_API_KEY  # Optional, if Syncthing requires auth
+```
+
+**If running from source (not globally installed):**
+```bash
+node dist/cli.js config --set-api-url http://localhost:8384
+node dist/cli.js config --set-api-key YOUR_API_KEY  # Optional
+```
+
+**Or install globally from source:**
+```bash
+npm install -g .
+# Then use: opencode-syncthing config --set-api-url http://localhost:8384
 ```
 
 ### 2. Add to OpenCode
@@ -66,8 +93,14 @@ mkdir -p ~/.config/opencode && echo '{
 
 ### 3. Verify installation
 
+**If globally installed:**
 ```bash
 opencode-syncthing verify
+```
+
+**If running from source:**
+```bash
+node dist/cli.js verify
 ```
 
 This checks that Syncthing is running and OpenCode storage is shared.
@@ -90,6 +123,7 @@ Data is synced between your machines via Syncthing. No cloud involved.
 
 ## CLI Commands
 
+**If globally installed:**
 | Command                      | Description                                         |
 | ---------------------------- | --------------------------------------------------- |
 | `opencode-syncthing verify`   | Verify Syncthing connection and OpenCode config     |
@@ -99,6 +133,9 @@ Data is synced between your machines via Syncthing. No cloud involved.
 | `opencode-syncthing logout`   | Clear stored configuration                          |
 | `opencode-syncthing version`  | Show installed version                              |
 | `opencode-syncthing help`     | Show help message                                   |
+
+**If running from source (not globally installed):**
+Replace `opencode-syncthing` with `node dist/cli.js` in the commands above.
 
 ## Configuration storage
 
