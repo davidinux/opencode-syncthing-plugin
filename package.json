@@ -4,6 +4,12 @@
   "description": "Sync OpenCode sessions via Syncthing (mimics opencode-sync-plugin)",
   "type": "module",
   "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "bin": {
     "opencode-syncthing": "./dist/cli.js"
   },
