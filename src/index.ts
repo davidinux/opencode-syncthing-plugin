@@ -206,10 +206,14 @@ function handleIncomingSync(event: any) {
 
 export const OpenCodeSyncthingPlugin: Plugin = async ({ client }: any) => {
   // Initialize plugin - use any to avoid type issues
-  await client.app.log({
-    level: "info",
-    message: "opencode-syncthing: Plugin initialized - mimicking opencode-sync-plugin with Syncthing",
-  } as any);
+  try {
+    await client.app.log({
+      level: "info",
+      message: "opencode-syncthing: Plugin initialized - mimicking opencode-sync-plugin with Syncthing",
+    } as any);
+  } catch (error) {
+    console.error("Plugin init error:", error);
+  }
 
   // Start incoming sync detection if enabled
   if (!incomingSyncEnabled) {
