@@ -5,6 +5,8 @@ import { existsSync, readFileSync, readdirSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 
+console.error("opencode-syncthing: MODULE LOADED - This should appear when OpenCode loads the plugin");
+
 // Track what we've already processed to avoid duplicates
 const processedSessions = new Set<string>();
 const processedMessages = new Set<string>();
