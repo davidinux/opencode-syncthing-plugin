@@ -75,8 +75,14 @@ export async function getFolderId(): Promise<string | null> {
       join(homedir(), ".local", "share", "opencode", "storage");
 
     const matchingFolder = folders.find(
-      (f: SyncthingFolder) =>
-        f.path === storageDir || f.path === storageDir + "/"
+      (f: SyncthingFolder) => {
+        // Expand ~ to home directory for comparison
+        let folderPath = f.path;
+        if (folderPath.startsWith("~/")) {
+          folderPath = join(homedir(), folderPath.slice(2));
+        }
+        return folderPath === storageDir || folderPath === storageDir + "/";
+      }
     );
 
     if (matchingFolder) {
