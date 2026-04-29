@@ -1,4 +1,3 @@
-import { Syncthing } from "syncthing";
 import { getConfig } from "./config.js";
 import { homedir } from "os";
 import { join } from "path";
@@ -8,28 +7,49 @@ export interface SyncthingFolder {
   path: string;
 }
 
-let syncthingClient: any = null;
+let cachedClient: any = null;
 
-function getClient() {
-  if (syncthingClient) return syncthingClient;
-
+function getApiUrl(): string {
   const config = getConfig();
-  const apiUrl = config.syncthingApiUrl || "http://localhost:8384";
-  const apiKey = config.syncthingApiKey;
+  return config.syncthingApiUrl || "http://localhost:8384";
+}
 
-  syncthingClient = new Syncthing({
-    url: apiUrl,
-    apiKey: apiKey || undefined,
+function getApiKey(): string | undefined {
+  const config = getConfig();
+  return config.syncthingApiKey;
+}
+
+async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
+  const url = `${getApiUrl()}/rest${endpoint}`;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  const apiKey = getApiKey();
+  if (apiKey) {
+    headers["X-API-Key"] = apiKey;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
   });
 
-  return syncthingClient;
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export async function ping(): Promise<boolean> {
   try {
-    const client = getClient();
-    const response = await client.system.ping();
-    return response?.ping === "pong";
+    const response = await fetch(`${getApiUrl()}/rest/system/ping`, {
+      headers: getApiKey() ? { "X-API-Key": getApiKey()! } : {},
+    });
+    const data = await response.json();
+    return data.ping === "pong";
   } catch {
     return false;
   }
@@ -37,9 +57,8 @@ export async function ping(): Promise<boolean> {
 
 export async function getFolders(): Promise<SyncthingFolder[]> {
   try {
-    const client = getClient();
-    const folders = await client.config.folders();
-    return folders || [];
+    const config = await apiRequest("/config");
+    return config.folders || [];
   } catch {
     return [];
   }
@@ -61,8 +80,7 @@ export async function getFolderId(): Promise<string | null> {
     );
 
     if (matchingFolder) {
-      // Save for future use
-      const { saveConfig } = require("./config.js");
+      const { saveConfig } = await import("./config.js");
       saveConfig({ ...config, folderId: matchingFolder.id });
       return matchingFolder.id;
     }
@@ -75,8 +93,7 @@ export async function getFolderId(): Promise<string | null> {
 
 export async function rescanFolder(folderId: string): Promise<boolean> {
   try {
-    const client = getClient();
-    await client.folder.rescan(folderId);
+    await apiRequest(`/folder/${folderId}/rescan`, { method: "POST" });
     return true;
   } catch {
     return false;
@@ -88,15 +105,11 @@ export async function listenForSyncEvents(
   callback: (event: any) => void
 ): Promise<void> {
   try {
-    const client = getClient();
     let lastEventId = 0;
 
     const poll = async () => {
       try {
-        const events = await client.events.list({
-          since: lastEventId,
-          limit: 100,
-        });
+        const events = await apiRequest(`/events?since=${lastEventId}&limit=100`);
 
         for (const event of events) {
           lastEventId = Math.max(lastEventId, event.id || 0);
@@ -112,7 +125,7 @@ export async function listenForSyncEvents(
         // Silent
       }
 
-      setTimeout(poll, 5000); // Poll every 5 seconds
+      setTimeout(poll, 5000);
     };
 
     poll();

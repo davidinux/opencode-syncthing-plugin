@@ -145,9 +145,7 @@ function inferRole(textContent: string): "user" | "assistant" {
  */
 async function triggerSyncthingRescan(sessionId?: string) {
   try {
-    const config = getConfig();
     const folderId = await getFolderId();
-
     if (!folderId) {
       return;
     }
@@ -199,8 +197,6 @@ function scheduleProcessMessage(messageId: string) {
 function handleIncomingSync(event: any) {
   try {
     if (event.data?.item?.startsWith("session/") || event.data?.item?.startsWith("message/")) {
-      // New session or message synced from another machine
-      // Log to OpenCode that new data is available
       console.log(`[opencode-syncthing] New data synced: ${event.data?.item}`);
     }
   } catch {
@@ -208,13 +204,12 @@ function handleIncomingSync(event: any) {
   }
 }
 
-export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
-  // Initialize plugin
+export const OpenCodeSyncthingPlugin: Plugin = async ({ client }: any) => {
+  // Initialize plugin - use any to avoid type issues
   await client.app.log({
-    service: "opencode-syncthing",
     level: "info",
-    message: "Plugin initialized - mimicking opencode-sync-plugin with Syncthing",
-  });
+    message: "opencode-syncthing: Plugin initialized - mimicking opencode-sync-plugin with Syncthing",
+  } as any);
 
   // Start incoming sync detection if enabled
   if (!incomingSyncEnabled) {
@@ -223,19 +218,18 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
       if (folderId) {
         listenForSyncEvents(folderId, handleIncomingSync);
         client.app.log({
-          service: "opencode-syncthing",
           level: "info",
-          message: "Incoming sync detection enabled",
-        });
+          message: "opencode-syncthing: Incoming sync detection enabled",
+        } as any);
       }
     });
   }
 
   return {
     // Subscribe to events - mirrors original exactly
-    event: async ({ event }) => {
+    event: async ({ event }: any) => {
       try {
-        const props = event.properties as any;
+        const props = (event as any).properties;
 
         // Session events - mirrors original
         if (
@@ -251,11 +245,9 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
             }
 
             // On session.idle, delay then read from local storage
-            // (gives OpenCode time to write title to disk)
             if (event.type === "session.idle") {
               setTimeout(() => {
                 const localData = getLocalSessionData(sessionId);
-
                 // Trigger Syncthing rescan to sync the updated data
                 triggerSyncthingRescan(sessionId);
               }, 1000); // 1 second delay for file write (same as original)
