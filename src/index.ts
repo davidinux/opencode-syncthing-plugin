@@ -339,14 +339,12 @@ function scheduleSyncMessage(messageId: string) {
 // ==================== Plugin Export ====================
 
 export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
-  console.error("Plugin initialized");
-
   // Start listening for incoming sync events
   try {
     const folderId = await getFolderId();
     if (folderId) {
       listenForSyncEvents(folderId, (event) => {
-        console.error("Sync event detected:", event.type, event.path || event.item || "");
+        // Sync event detected - could log if needed
       });
     }
   } catch {
