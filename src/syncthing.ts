@@ -76,7 +76,6 @@ export async function getFolderId(): Promise<string | null> {
 
     const matchingFolder = folders.find(
       (f: SyncthingFolder) => {
-        // Expand ~ to home directory for comparison
         let folderPath = f.path;
         if (folderPath.startsWith("~/")) {
           folderPath = join(homedir(), folderPath.slice(2));
@@ -99,9 +98,21 @@ export async function getFolderId(): Promise<string | null> {
 
 export async function rescanFolder(folderId: string): Promise<boolean> {
   try {
-    await apiRequest(`/folder/${folderId}/rescan`, { method: "POST" });
-    return true;
-  } catch {
+    const url = `${getApiUrl()}/rest/db/scan?folder=${folderId}`;
+    const headers: Record<string, string> = {};
+    const apiKey = getApiKey();
+    if (apiKey) {
+      headers["X-API-Key"] = apiKey;
+    }
+    
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.error("Rescan error:", error);
     return false;
   }
 }
