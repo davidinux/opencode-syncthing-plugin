@@ -26,6 +26,30 @@ git clone https://github.com/davidinux/opencode-syncthing-plugin.git
 cd opencode-syncthing-plugin
 npm install
 npm run build
+npm install -g .  # Optional: install globally
+```
+
+**To run CLI commands from source (without global install):**
+
+```bash
+node dist/cli.js <command>
+# Example: node dist/cli.js config --set-api-url http://localhost:8384
+```
+
+**Or install globally (makes `opencode-syncthing` available everywhere):**
+
+```bash
+npm install -g .
+# Then you can run: opencode-syncthing <command>
+```
+
+### From source
+
+```bash
+git clone https://github.com/davidinux/opencode-syncthing-plugin.git
+cd opencode-syncthing-plugin
+npm install
+npm run build
 ```
 
 **To run CLI commands from source (without global install):**
@@ -154,13 +178,8 @@ This plugin follows the [OpenCode plugin specification](https://opencode.ai/docs
 import type { Plugin } from "@opencode-ai/plugin";
 
 export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
-  // Initialize plugin
-  await client.app.log({
-    service: "opencode-syncthing",
-    level: "info",
-    message: "Plugin initialized",
-  });
-
+  // Initialize plugin (runs when OpenCode loads the plugin)
+  
   return {
     // Subscribe to events (same as opencode-sync-plugin)
     event: async ({ event }) => {

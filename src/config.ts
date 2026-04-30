@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 
@@ -27,7 +27,6 @@ export function getConfig(): SyncthingConfig {
 export function saveConfig(config: SyncthingConfig): void {
   try {
     if (!existsSync(CONFIG_DIR)) {
-      const { mkdirSync } = require("fs");
       mkdirSync(CONFIG_DIR, { recursive: true });
     }
     writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf8");
