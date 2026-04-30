@@ -101,22 +101,20 @@ program
 
     const isRunning = await ping();
     console.log("  Syncthing Running:", isRunning ? chalk.green("Yes") : chalk.red("No"));
-
+    
     if (isRunning) {
+      const folderId = await getFolderId();
       const folders = await getFolders();
       console.log("  Shared Folders:", folders.length);
       
-      const config = getConfig();
-      const storageDir = config.storageDir || join(homedir(), ".local", "share", "opencode", "storage");
-      
-      const matchingFolder = folders.find((f: any) => f.path === storageDir);
-      if (matchingFolder) {
-        console.log("  OpenCode Folder:", chalk.green("Found - " + matchingFolder.id));
+      if (folderId) {
+        console.log("  OpenCode Folder:", chalk.green("Found - " + folderId));
       } else {
         console.log("  OpenCode Folder:", chalk.yellow("Not found"));
+        console.log("  Expected path:", join(homedir(), ".local", "share", "opencode", "storage"));
       }
     }
-
+    
     console.log("");
   });
 
