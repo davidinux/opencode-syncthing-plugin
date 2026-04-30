@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck - message.part.delta is a valid runtime event type
 import type { Plugin } from "@opencode-ai/plugin";
 import { getConfig, saveConfig } from "./config.js";
 import { homedir } from "os";
