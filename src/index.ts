@@ -1,9 +1,10 @@
-// @ts-nocheck - message.part.delta is a valid runtime event type
+// @ts-nocheck - message.part.delta is valid runtime event type
 import type { Plugin } from "@opencode-ai/plugin";
 import { getConfig, saveConfig } from "./config.js";
 import { homedir } from "os";
 import { join } from "path";
-import { existsSync, readFileSync, readdirSync } from "fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync } from "fs";
+import { execSync } from "child_process";
 
 // ==================== Syncthing API ====================
 
@@ -136,10 +137,69 @@ async function listenForSyncEvents(
         // Silent
       }
 
-      setTimeout(poll, 5000);
+       setTimeout(poll, 5000);
     };
 
     poll();
+  } catch {
+    // Silent
+  }
+}
+
+// ==================== Session Export/Import Sync ====================
+
+const SYNC_DIR = join(homedir(), ".local", "share", "opencode", "sync-export");
+
+/**
+ * Export a session using OpenCode CLI and save to sync directory
+ */
+async function exportSession(sessionId: string): Promise<boolean> {
+  try {
+    if (!existsSync(SYNC_DIR)) {
+      const { mkdirSync } = await import("fs");
+      mkdirSync(SYNC_DIR, { recursive: true });
+    }
+
+    // Export session to JSON file
+    const outputPath = join(SYNC_DIR, `${sessionId}.json`);
+    const cmd = `opencode export ${sessionId}`;
+    const output = execSync(cmd, { encoding: "utf8" });
+    
+    writeFileSync(outputPath, output);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Import a session from synced file
+ */
+async function importSession(filePath: string): Promise<boolean> {
+  try {
+    const cmd = `opencode import "${filePath}"`;
+    execSync(cmd, { encoding: "utf8" });
+    
+    // Remove the file after successful import
+    unlinkSync(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Watch for synced session files and import them
+ */
+function watchForImportableSessions() {
+  try {
+    if (!existsSync(SYNC_DIR)) return;
+
+    const files = readdirSync(SYNC_DIR).filter(f => f.endsWith(".json"));
+    for (const file of files) {
+      const fullPath = join(SYNC_DIR, file);
+      importSession(fullPath);
+    }
   } catch {
     // Silent
   }
@@ -340,12 +400,15 @@ function scheduleSyncMessage(messageId: string) {
 // ==================== Plugin Export ====================
 
 export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
+  // Import any synced sessions on startup
+  watchForImportableSessions();
+
   // Start listening for incoming sync events
   try {
     const folderId = await getFolderId();
     if (folderId) {
       listenForSyncEvents(folderId, (event) => {
-        // Sync event detected
+        // Sync event detected - could log if needed
       });
     }
   } catch {
@@ -370,27 +433,11 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
               syncedSessions.add(sessionId);
             }
 
-            // On session.idle, delay then read from local storage
+            // On session.idle, export session for sync
             if (event.type === "session.idle") {
               setTimeout(() => {
-                const localData = getLocalSessionData(sessionId);
-
-                if (localData && (localData.title || localData.slug)) {
-                  doSyncSession({
-                    ...props,
-                    title: localData.title || props?.title,
-                    slug: localData.slug || props?.slug,
-                    modelID: localData.model || props?.modelID,
-                    providerID: localData.provider || props?.providerID,
-                    tokens: {
-                      input: localData.promptTokens || 0,
-                      output: localData.completionTokens || 0,
-                    },
-                    cost: localData.cost || 0,
-                  });
-                } else {
-                  doSyncSession(props);
-                }
+                exportSession(sessionId);
+                watchForImportableSessions();
               }, 1000);
               return;
             }
