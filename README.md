@@ -1,14 +1,14 @@
 # opencode-syncthing-plugin
 
-Sync your OpenCode sessions via Syncthing P2P sync (mimics opencode-sync-plugin architecture).
+Sync your OpenCode sessions between machines via Syncthing P2P sync (mimics opencode-sync-plugin architecture).
 
 [![npm version](https://img.shields.io/npm/v/opencode-syncthing-plugin.svg)](https://www.npmjs.com/package/opencode-syncthing-plugin)
 
 ## Features
 
 - **P2P Sync**: Uses Syncthing for decentralized, private sync between your machines
+- **Session Export/Import**: Automatically exports sessions on idle, imports synced sessions on startup
 - **Event-Driven**: Mirrors opencode-sync-plugin's event handling (session/message events)
-- **Incoming Sync Detection**: Notifies you when new sessions arrive from other machines
 - **No Cloud Required**: All data stays on your machines, synced via Syncthing
 
 ## Installation
@@ -131,19 +131,22 @@ This checks that Syncthing is running and OpenCode storage is shared.
 
 ## How it works
 
-The plugin hooks into OpenCode events and triggers Syncthing rescan:
+The plugin hooks into OpenCode events and uses OpenCode's export/import commands to sync sessions:
 
 | Event                  | Action                                                 |
 | ---------------------- | ------------------------------------------------------ |
 | `session.created`      | Triggers Syncthing rescan of storage folder           |
 | `session.updated`      | Triggers Syncthing rescan                              |
-| `session.idle`         | Final rescan with accurate title from local storage    |
+| `session.idle`         | **Exports session**, triggers Syncthing rescan        |
 | `message.updated`      | Captures message metadata                             |
 | `message.part.updated` | Captures message text, triggers rescan after debounce  |
+| `message.part.delta`   | Captures message text (what OpenCode actually sends) |
 
-On `session.idle`, the plugin reads OpenCode's local storage to get the accurate session title (same as opencode-sync-plugin).
-
-Data is synced between your machines via Syncthing. No cloud involved.
+**Sync Flow:**
+1. On **session.idle**, plugin exports session to `~/.local/share/opencode/sync-export/SESSION_ID.json`
+2. **Syncthing syncs** the JSON file to other machines
+3. On **plugin startup** (or after export), plugin **imports** any synced JSON files via `opencode import`
+4. Session appears in OpenCode on the other machine!
 
 ## CLI Commands
 
@@ -168,6 +171,13 @@ Configuration is stored at:
 ```
 ~/.config/opencode-syncthing-plugin/
   config.json       # Syncthing API URL, API Key, storage dir
+```
+
+Session export files are stored at:
+
+```
+~/.local/share/opencode/sync-export/
+  SESSION_ID.json  # Exported session (synced via Syncthing)
 ```
 
 ## Plugin architecture
