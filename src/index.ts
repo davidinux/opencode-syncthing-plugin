@@ -160,13 +160,16 @@ async function exportSession(sessionId: string): Promise<boolean> {
       mkdirSync(SYNC_DIR, { recursive: true });
     }
 
-    // Export session to JSON file
+    // Export session to JSON file (use --print-logs to avoid TUI)
     const outputPath = join(SYNC_DIR, `${sessionId}.json`);
-    const cmd = `opencode export ${sessionId}`;
-    const output = execSync(cmd, { encoding: "utf8" });
+    const cmd = `echo "${sessionId}" | opencode export --print-logs`;
+    const output = execSync(cmd, { encoding: "utf8", timeout: 10000 });
     
-    writeFileSync(outputPath, output);
-    return true;
+    if (output && output.trim()) {
+      writeFileSync(outputPath, output);
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -177,7 +180,7 @@ async function exportSession(sessionId: string): Promise<boolean> {
  */
 async function importSession(filePath: string): Promise<boolean> {
   try {
-    const cmd = `opencode import "${filePath}"`;
+    const cmd = `opencode import ${filePath}`;
     execSync(cmd, { encoding: "utf8" });
     
     // Remove the file after successful import
