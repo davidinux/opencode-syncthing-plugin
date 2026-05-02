@@ -441,12 +441,12 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
   }
 
   return {
-    event: async ({ event }) => {
-      try {
-        const props = event.properties as any;
+      event: async ({ event }) => {
+        try {
+          const props = event.properties as any;
 
-        // Session events (handle created, updated, idle)
-        if (
+          // Session events (handle created, updated, idle)
+          if (
           event.type === "session.created" ||
           event.type === "session.updated" ||
           event.type === "session.idle" ||
@@ -536,6 +536,4 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
       }
     },
   };
-};
-
-export default OpenCodeSyncthingPlugin;
+}
