@@ -3,7 +3,7 @@ import type { Plugin } from "@opencode-ai/plugin";
 import { getConfig, saveConfig } from "./config.js";
 import { homedir } from "os";
 import { join } from "path";
-import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync } from "fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync } from "fs";
 import { execSync } from "child_process";
 
 // ==================== Syncthing API ====================
@@ -161,28 +161,37 @@ async function exportSession(sessionId: string): Promise<boolean> {
     }
 
     const outputPath = join(SYNC_DIR, `${sessionId}.json`);
-    const dbPath = join(homedir(), ".local", "share", "opencode", "opencode.db");
     
-    // Use opencode export CLI (working outside plugin context)
-    const cmd = `opencode export ${sessionId} --print-logs 2>&1`;
-    const tmpFile = join(SYNC_DIR, `${sessionId}.tmp`);
+    // Use helper script to avoid process spawning issues
+    const helperScript = join(homedir(), "Projects", "github", "davidinux", "opencode-syncthing-plugin", "export-helper.sh");
     
-    // Write to temp file to avoid buffer issues
-    execSync(`bash -c '${cmd} > ${tmpFile}'`, { timeout: 30000 });
+    if (!existsSync(helperScript)) {
+      return false;
+    }
     
-    if (existsSync(tmpFile)) {
-      const output = readFileSync(tmpFile, "utf8");
-      unlinkSync(tmpFile);
-      
-      // Check if output is valid JSON
-      if (output.trim().startsWith('{')) {
-        writeFileSync(outputPath, output);
-        return true;
-      }
+    // Call helper script and capture output
+    const result = execSync(`bash "${helperScript}" "${sessionId}" "${outputPath}"`, { 
+      timeout: 30000,
+      encoding: "utf8",
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    
+    // Check if export was successful
+    if (existsSync(outputPath)) {
+      const stats = statSync(outputPath);
+      return stats.size > 0;
     }
     
     return false;
-  } catch {
+  } catch (e: any) {
+    // Log error to file for debugging
+    try {
+      const fs = await import("fs");
+      fs.writeFileSync(
+        join(homedir(), ".local", "share", "opencode", "export-error.log"),
+        `${new Date().toISOString()}: ${e.message}\n`
+      );
+    } catch {}
     return false;
   }
 }
