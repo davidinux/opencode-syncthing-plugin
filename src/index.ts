@@ -411,6 +411,13 @@ function scheduleSyncMessage(messageId: string) {
 // ==================== Plugin Export ====================
 
 export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
+  // Write marker file to verify plugin is loaded
+  try {
+    const fs = await import("fs");
+    const markerPath = join(homedir(), ".local", "share", "opencode", "syncthing-plugin-loaded");
+    fs.writeFileSync(markerPath, new Date().toISOString());
+  } catch {}
+
   // Import any synced sessions on startup (non-blocking)
   setTimeout(() => watchForImportableSessions(), 1000);
 
