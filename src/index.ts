@@ -161,21 +161,26 @@ async function exportSession(sessionId: string): Promise<boolean> {
     }
 
     const outputPath = join(SYNC_DIR, `${sessionId}.json`);
+    const dbPath = join(homedir(), ".local", "share", "opencode", "opencode.db");
     
-    // Run opencode export with proper stdin (required for non-TUI mode)
-    const cmd = `echo -n "${sessionId}" | opencode export --print-logs`;
-    const output = execSync(cmd, { 
-      encoding: "utf8", 
-      timeout: 30000,
-      stdio: ['pipe', 'pipe', 'ignore'],
-      env: { ...process.env, TERM: 'dumb', CI: 'true' }
-    });
+    // Use opencode export CLI (working outside plugin context)
+    const cmd = `opencode export ${sessionId} --print-logs 2>&1`;
+    const tmpFile = join(SYNC_DIR, `${sessionId}.tmp`);
     
-    // Validate output is JSON
-    if (output && output.trim().startsWith('{')) {
-      writeFileSync(outputPath, output);
-      return true;
+    // Write to temp file to avoid buffer issues
+    execSync(`bash -c '${cmd} > ${tmpFile}'`, { timeout: 30000 });
+    
+    if (existsSync(tmpFile)) {
+      const output = readFileSync(tmpFile, "utf8");
+      unlinkSync(tmpFile);
+      
+      // Check if output is valid JSON
+      if (output.trim().startsWith('{')) {
+        writeFileSync(outputPath, output);
+        return true;
+      }
     }
+    
     return false;
   } catch {
     return false;
@@ -411,13 +416,6 @@ function scheduleSyncMessage(messageId: string) {
 // ==================== Plugin Export ====================
 
 export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
-  // Write marker file to verify plugin is loaded
-  try {
-    const fs = await import("fs");
-    const markerPath = join(homedir(), ".local", "share", "opencode", "syncthing-plugin-loaded");
-    fs.writeFileSync(markerPath, new Date().toISOString());
-  } catch {}
-
   // Import any synced sessions on startup (non-blocking)
   setTimeout(() => watchForImportableSessions(), 1000);
 
