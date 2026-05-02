@@ -160,19 +160,19 @@ async function exportSession(sessionId: string): Promise<boolean> {
       mkdirSync(SYNC_DIR, { recursive: true });
     }
 
-    // Export session directly from database
-    const dbPath = join(homedir(), ".local", "share", "opencode", "opencode.db");
     const outputPath = join(SYNC_DIR, `${sessionId}.json`);
     
-    // Use opencode CLI with proper session ID (non-interactive)
-    const cmd = `opencode export ${sessionId} --print-logs 2>&1`;
+    // Run opencode export with proper stdin (required for non-TUI mode)
+    const cmd = `echo -n "${sessionId}" | opencode export --print-logs`;
     const output = execSync(cmd, { 
       encoding: "utf8", 
-      timeout: 10000,
-      env: { ...process.env, NODE_NO_READLINE: "1" }
+      timeout: 30000,
+      stdio: ['pipe', 'pipe', 'ignore'],
+      env: { ...process.env, TERM: 'dumb', CI: 'true' }
     });
     
-    if (output && output.includes('"info"') && output.includes('"messages"')) {
+    // Validate output is JSON
+    if (output && output.trim().startsWith('{')) {
       writeFileSync(outputPath, output);
       return true;
     }
