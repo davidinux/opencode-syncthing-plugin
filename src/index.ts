@@ -160,12 +160,19 @@ async function exportSession(sessionId: string): Promise<boolean> {
       mkdirSync(SYNC_DIR, { recursive: true });
     }
 
-    // Export session to JSON file (use --print-logs to avoid TUI)
+    // Export session directly from database
+    const dbPath = join(homedir(), ".local", "share", "opencode", "opencode.db");
     const outputPath = join(SYNC_DIR, `${sessionId}.json`);
-    const cmd = `echo "${sessionId}" | opencode export --print-logs`;
-    const output = execSync(cmd, { encoding: "utf8", timeout: 10000 });
     
-    if (output && output.trim()) {
+    // Use opencode CLI with proper session ID (non-interactive)
+    const cmd = `opencode export ${sessionId} --print-logs 2>&1`;
+    const output = execSync(cmd, { 
+      encoding: "utf8", 
+      timeout: 10000,
+      env: { ...process.env, NODE_NO_READLINE: "1" }
+    });
+    
+    if (output && output.includes('"info"') && output.includes('"messages"')) {
       writeFileSync(outputPath, output);
       return true;
     }
@@ -194,14 +201,15 @@ async function importSession(filePath: string): Promise<boolean> {
 /**
  * Watch for synced session files and import them
  */
-function watchForImportableSessions() {
+async function watchForImportableSessions() {
   try {
     if (!existsSync(SYNC_DIR)) return;
 
     const files = readdirSync(SYNC_DIR).filter(f => f.endsWith(".json"));
     for (const file of files) {
       const fullPath = join(SYNC_DIR, file);
-      importSession(fullPath);
+      // Run import in background (non-blocking)
+      setTimeout(() => importSession(fullPath), 0);
     }
   } catch {
     // Silent
@@ -403,15 +411,15 @@ function scheduleSyncMessage(messageId: string) {
 // ==================== Plugin Export ====================
 
 export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
-  // Import any synced sessions on startup
-  watchForImportableSessions();
+  // Import any synced sessions on startup (non-blocking)
+  setTimeout(() => watchForImportableSessions(), 1000);
 
   // Start listening for incoming sync events
   try {
     const folderId = await getFolderId();
     if (folderId) {
       listenForSyncEvents(folderId, (event) => {
-        // Sync event detected - could log if needed
+        // Sync event detected
       });
     }
   } catch {
@@ -427,17 +435,38 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         if (
           event.type === "session.created" ||
           event.type === "session.updated" ||
-          event.type === "session.idle"
+          event.type === "session.idle" ||
+          event.type === "session.diff"
         ) {
-          const sessionId = props?.id;
+          // Try multiple ways to get session ID
+          const props = event.properties as any;
+          let sessionId = props?.sessionID || props?.info?.id || props?.id;
+          
+          // If we got short ID, try to get full ID from database
+          if (sessionId && !sessionId.startsWith("ses_")) {
+            try {
+              const { execSync } = await import("child_process");
+              const result = execSync(
+                `sqlite3 ~/.local/share/opencode/opencode.db "SELECT id FROM session WHERE id LIKE '%${sessionId}' LIMIT 1"`,
+                { encoding: "utf8" }
+              ).trim();
+              if (result) sessionId = result;
+            } catch {}
+          }
+          
+          fs.appendFileSync(debugLog, `SESSION EVENT: ${event.type} - sessionId=${sessionId}\n`);
           if (sessionId) {
             if (event.type === "session.created") {
               if (syncedSessions.has(sessionId)) return;
               syncedSessions.add(sessionId);
             }
 
-            // On session.idle, export session for sync
-            if (event.type === "session.idle") {
+            // Export session for sync on any session event
+            if (
+              event.type === "session.idle" ||
+              event.type === "session.diff" ||
+              event.type === "session.updated"
+            ) {
               setTimeout(() => {
                 exportSession(sessionId);
                 watchForImportableSessions();
