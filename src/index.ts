@@ -461,28 +461,27 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
             } catch {}
           }
           
-          fs.appendFileSync(debugLog, `SESSION EVENT: ${event.type} - sessionId=${sessionId}\n`);
-          if (sessionId) {
-            if (event.type === "session.created") {
-              if (syncedSessions.has(sessionId)) return;
-              syncedSessions.add(sessionId);
-            }
+           if (sessionId) {
+             if (event.type === "session.created") {
+               if (syncedSessions.has(sessionId)) return;
+               syncedSessions.add(sessionId);
+             }
 
-            // Export session for sync on any session event
-            if (
-              event.type === "session.idle" ||
-              event.type === "session.diff" ||
-              event.type === "session.updated"
-            ) {
-              setTimeout(() => {
-                exportSession(sessionId);
-                watchForImportableSessions();
-              }, 1000);
-              return;
-            }
+             // Export session for sync on any session event
+             if (
+               event.type === "session.idle" ||
+               event.type === "session.diff" ||
+               event.type === "session.updated"
+             ) {
+               setTimeout(() => {
+                 exportSession(sessionId);
+                 watchForImportableSessions();
+               }, 1000);
+               return;
+             }
 
-            doSyncSession(props);
-          }
+             doSyncSession(props);
+           }
         }
 
         // Message metadata
