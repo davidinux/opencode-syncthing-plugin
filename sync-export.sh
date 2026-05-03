@@ -19,8 +19,12 @@ for session in $sessions; do
     continue
   fi
   
-  # Export session to file
-  opencode export "$session" > "$EXPORT_DIR/${session}.json" 2>/dev/null && ((count++))
+  # Export session to file - output only JSON to stdout
+  output=$(opencode export "$session" 2>/dev/null)
+  if [ $? -eq 0 ] && [ -n "$output" ]; then
+    echo "$output" > "$EXPORT_DIR/${session}.json"
+    ((count++))
+  fi
 done
 
 echo "Exported $count sessions to $EXPORT_DIR"
