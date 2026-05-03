@@ -1,5 +1,6 @@
 // @ts-nocheck - message.part.delta is valid runtime event type
 import type { Plugin } from "@opencode-ai/plugin";
+import { tool } from "@opencode-ai/plugin";
 import { getConfig, saveConfig } from "./config.js";
 import { homedir } from "os";
 import { join, basename } from "path";
@@ -648,6 +649,18 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
           }]
         };
       }
+    },
+    
+    // Tool definition for /syncthing command
+    tool: {
+      syncthing: tool({
+        description: "Export all recent sessions to Syncthing sync folder for syncing to other machines",
+        args: {},
+        execute: async () => {
+          const count = await exportAllSessionsWithResponse();
+          return `🔄 Synced ${count} sessions to sync-export folder. They will be synced to other machines on next Syncthing sync.`;
+        }
+      })
     },
   };
 }
