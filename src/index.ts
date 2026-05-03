@@ -425,6 +425,14 @@ function scheduleSyncMessage(messageId: string) {
 // ==================== Plugin Export ====================
 
 export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
+  // Verify plugin loaded
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const os = await import("os");
+    fs.writeFileSync(path.join(os.homedir(), ".local", "share", "opencode", "syncthing-plugin-loaded"), new Date().toISOString());
+  } catch {}
+
   // Import any synced sessions on startup (non-blocking)
   setTimeout(() => watchForImportableSessions(), 1000);
 
@@ -452,6 +460,16 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
           event.type === "session.idle" ||
           event.type === "session.diff"
         ) {
+          // Debug log
+          try {
+            const fs = await import("fs");
+            const path = await import("path");
+            const os = await import("os");
+            const props = event.properties as any;
+            const sessionId = props?.sessionID || props?.info?.id || props?.id;
+            fs.appendFileSync(path.join(os.homedir(), ".local", "share", "opencode", "plugin-debug.log"), `SESSION: ${event.type} - ${sessionId}\n`);
+          } catch {}
+
           // Try multiple ways to get session ID
           const props = event.properties as any;
           let sessionId = props?.sessionID || props?.info?.id || props?.id;
