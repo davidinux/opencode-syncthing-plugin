@@ -502,7 +502,9 @@ function trySyncMessage(messageId: string) {
   fs.writeFileSync("/tmp/trySyncMessage.log", `textContent: '${textContent}'\n`);
   
   // Check for /syncthing command (works for both config command and message)
-  if (textContent.trim().toLowerCase() === "/syncthing") {
+  // Flexible match - could be exact or part of message
+  const trimmed = textContent.trim().toLowerCase();
+  if (trimmed === "/syncthing" || trimmed.startsWith("/syncthing ")) {
     fs.writeFileSync("/tmp/trySyncMessage.log", "MATCH - exporting!\n");
     exportAllSessionsWithResponse();
   }
