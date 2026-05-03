@@ -650,25 +650,22 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
     },
     
     // Command hook - runs before any command executes
-    "command.execute.before": async ({ input }, output) => {
+    // Use event system - tui.command.execute fires when user runs a command
+    event: async ({ event }) => {
       const fs = require("fs");
-      fs.appendFileSync("/tmp/command-hook.log", `command: ${input.command}\n`);
       
-      if (input.command === "syncthing") {
+      // Log all command events for debugging
+      if (event.type === "tui.command.execute" || event.type === "command.executed") {
+        fs.appendFileSync("/tmp/command-hook.log", `EVENT: ${event.type}, command: ${JSON.stringify(event.properties)}\n`);
+      }
+      
+      // Check for /syncthing command via event
+      const props = event.properties as any;
+      const command = props?.command || props?.input?.command;
+      if (command === "syncthing") {
         fs.appendFileSync("/tmp/command-hook.log", "MATCH - exporting!\n");
-        // Export all sessions
         const count = await exportAllSessionsWithResponse();
-        
         fs.appendFileSync("/tmp/command-hook.log", `exported: ${count}\n`);
-        
-        // Set output.parts to show response to user without adding to history
-        // This replaces the normal command output
-        if (output && output.parts) {
-          output.parts = [{
-            type: "text",
-            text: `🔄 Synced ${count} sessions to sync-export folder`
-          }];
-        }
       }
     },
   };
