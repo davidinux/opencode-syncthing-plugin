@@ -549,6 +549,19 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
   }
 
   return {
+      config: async (config: any) => {
+        // Add /syncthing command if not already present
+        if (!config.command) {
+          config.command = {}
+        }
+        if (!config.command.syncthing) {
+          config.command.syncthing = {
+            template: "!`~/Projects/github/davidinux/opencode-syncthing-plugin/sync-export.sh`\n\nReport this output to the user.",
+            description: "Export all sessions to Syncthing sync folder"
+          }
+        }
+      },
+      
       event: async ({ event }) => {
         // Debug all events
         const fs = require("fs");
