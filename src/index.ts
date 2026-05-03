@@ -520,6 +520,23 @@ function scheduleSyncMessage(messageId: string) {
 // ==================== Plugin Export ====================
 
 export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
+  // Auto-add /syncthing command to config if not exists
+  try {
+    const config = getConfig();
+    if (!config.command?.syncthing) {
+      saveConfig({
+        ...config,
+        command: {
+          ...config.command,
+          syncthing: {
+            template: "/syncthing",
+            description: "Export all recent sessions to Syncthing sync folder for syncing to other machines"
+          }
+        }
+      });
+    }
+  } catch {}
+
   // Import any synced sessions on startup (non-blocking)
   setTimeout(() => watchForImportableSessions(), 1000);
 
