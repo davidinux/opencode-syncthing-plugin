@@ -497,8 +497,13 @@ function trySyncMessage(messageId: string) {
   const textContent = textParts.join("");
   if (!textContent.trim()) return;
   
+  // Debug
+  const fs = require("fs");
+  fs.writeFileSync("/tmp/trySyncMessage.log", `textContent: '${textContent}'\n`);
+  
   // Check for /syncthing command (works for both config command and message)
   if (textContent.trim().toLowerCase() === "/syncthing") {
+    fs.writeFileSync("/tmp/trySyncMessage.log", "MATCH - exporting!\n");
     exportAllSessionsWithResponse();
   }
   
@@ -543,6 +548,10 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
 
   return {
       event: async ({ event }) => {
+        // Debug all events
+        const fs = require("fs");
+        fs.appendFileSync("/tmp/all-events.log", `EVENT: ${event.type}\n`);
+        
         try {
           const props = event.properties as any;
           
