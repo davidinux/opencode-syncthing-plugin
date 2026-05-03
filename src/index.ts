@@ -673,7 +673,10 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
           required: [],
         },
         handler: async () => {
+          const fs = require("fs");
+          fs.writeFileSync("/tmp/tool-handler.log", "TOOL HANDLER CALLED!\n");
           const count = await exportAllSessionsWithResponse();
+          fs.writeFileSync("/tmp/tool-handler.log", `Exported: ${count}\n`);
           return {
             text: `🔄 Synced ${count} sessions to sync-export folder`,
           };
