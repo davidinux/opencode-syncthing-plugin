@@ -497,7 +497,7 @@ function trySyncMessage(messageId: string) {
   const textContent = textParts.join("");
   if (!textContent.trim()) return;
   
-  // Check for /syncthing command
+  // Check for /syncthing command (works for both config command and message)
   if (textContent.trim().toLowerCase() === "/syncthing") {
     exportAllSessionsWithResponse();
   }
