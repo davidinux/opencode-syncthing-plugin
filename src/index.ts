@@ -610,15 +610,23 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         if (event.type === "message.updated") {
           const info = props?.info;
           if (info?.id && info?.sessionID && info?.role) {
+            // Debug: log what we received
+            const debugLog = await import("fs");
+            debugLog.writeFileSync("/tmp/syncthing-msg.log", `info: ${JSON.stringify(info).slice(0, 200)}\n`);
+            
             // Check for /syncthing command in message
             const content = info?.parts?.[0]?.text as string || "";
             const trimmed = content.trim().toLowerCase();
             
+            debugLog.appendFileSync("/tmp/syncthing-msg.log", `content: '${content}' trimmed: '${trimmed}'\n`);
+            
             if (trimmed === "/syncthing") {
+              debugLog.appendFileSync("/tmp/syncthing-msg.log", "MATCH!\n");
+              
               // Export all sessions and show user response
               setTimeout(async () => {
                 const count = await exportAllSessionsWithResponse();
-                // The message will appear in chat automatically
+                debugLog.appendFileSync("/tmp/syncthing-msg.log", `Exported: ${count}\n`);
               }, 500);
             }
             
