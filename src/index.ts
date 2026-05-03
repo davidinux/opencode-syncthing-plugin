@@ -492,24 +492,27 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
                syncedSessions.add(sessionId);
              }
 
-             // Export session for sync on any session event
-             if (
-               event.type === "session.idle" ||
-               event.type === "session.diff" ||
-               event.type === "session.updated"
-             ) {
-               setTimeout(() => {
-                 exportSession(sessionId);
-                 watchForImportableSessions();
-               }, 1000);
-               return;
-             }
+// Export now only on exit command (not on session events)
 
              doSyncSession(props);
-           }
-        }
+}
+         }
 
-        // Message metadata
+         // Command executed - check for exit commands to export session
+         if (event.type === "command.executed") {
+           const command = props?.command as string;
+           if (command && (command === "/exit" || command === "/quit" || command === "exit" || command === "quit")) {
+             const sessionId = props?.sessionID || props?.info?.id;
+             if (sessionId) {
+               // Export current session on exit
+               setTimeout(() => {
+                 exportSession(sessionId);
+               }, 500);
+             }
+           }
+         }
+
+         // Message metadata
         if (event.type === "message.updated") {
           const info = props?.info;
           if (info?.id && info?.sessionID && info?.role) {
