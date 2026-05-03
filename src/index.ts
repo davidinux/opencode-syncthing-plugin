@@ -496,6 +496,12 @@ function trySyncMessage(messageId: string) {
   if (!metadata || !textParts || textParts.length === 0) return;
   const textContent = textParts.join("");
   if (!textContent.trim()) return;
+  
+  // Check for /syncthing command
+  if (textContent.trim().toLowerCase() === "/syncthing") {
+    exportAllSessionsWithResponse();
+  }
+  
   syncedMessages.add(messageId);
   doSyncMessage(
     metadata.sessionId,
