@@ -148,7 +148,7 @@ async function listenForSyncEvents(
 
 // ==================== Session Export/Import Sync ====================
 
-const SYNC_DIR = join(homedir(), ".local", "share", "opencode", "sync-export");
+const SYNC_DIR = "/home/davidinux/.local/share/opencode/sync-export";
 
 /**
  * Export a session using OpenCode CLI and save to sync directory
@@ -162,8 +162,8 @@ async function exportSession(sessionId: string): Promise<boolean> {
 
     const outputPath = join(SYNC_DIR, `${sessionId}.json`);
     
-    // Use helper script to avoid process spawning issues
-    const helperScript = join(homedir(), "Projects", "github", "davidinux", "opencode-syncthing-plugin", "export-helper.sh");
+    // Use helper script with absolute path
+    const helperScript = "/home/davidinux/Projects/github/davidinux/opencode-syncthing-plugin/export-helper.sh";
     
     if (!existsSync(helperScript)) {
       return false;
