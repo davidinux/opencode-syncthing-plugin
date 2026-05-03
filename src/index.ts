@@ -555,11 +555,13 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         fs.appendFileSync("/tmp/all-events.log", `EVENT: ${event.type}\n`);
         
         // Check for /syncthing command via event system
-        if (event.type === "tui.command.execute" || event.type === "command.executed") {
-          const props = event.properties as any;
-          const command = props?.command || props?.input?.command;
-          if (command === "syncthing") {
-            fs.appendFileSync("/tmp/command-hook.log", "MATCH - exporting via event!\n");
+        if (event.type === "tool.execute.before") {
+          const fs = require("fs");
+          fs.appendFileSync("/tmp/tool-events.log", `tool: ${JSON.stringify(props)}\n`);
+          
+          const toolName = props?.name;
+          if (toolName === "syncthing") {
+            fs.writeFileSync("/tmp/tool-events.log", "SYNCTHING TOOL CALLED!\n");
             await exportAllSessionsWithResponse();
           }
         }
