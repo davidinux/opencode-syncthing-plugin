@@ -537,10 +537,6 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
     }
   } catch {}
 
-  // Debug: log all events to see what's happening
-  const fs = await import("fs");
-  fs.writeFileSync("/tmp/plugin-events.log", `Plugin loaded at ${new Date().toISOString()}\n`);
-
   // Import any synced sessions on startup (non-blocking)
   setTimeout(() => watchForImportableSessions(), 1000);
 
@@ -559,10 +555,6 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
   return {
       event: async ({ event }) => {
         try {
-          // Debug: log all events
-          const fs = await import("fs");
-          fs.appendFileSync("/tmp/plugin-events.log", `EVENT: ${event.type}\n`);
-          
           const props = event.properties as any;
           
           // Session events (handle created, updated, idle)
@@ -618,6 +610,18 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         if (event.type === "message.updated") {
           const info = props?.info;
           if (info?.id && info?.sessionID && info?.role) {
+            // Check for /syncthing command in message
+            const content = info?.parts?.[0]?.text as string || "";
+            const trimmed = content.trim().toLowerCase();
+            
+            if (trimmed === "/syncthing") {
+              // Export all sessions and show user response
+              setTimeout(async () => {
+                const count = await exportAllSessionsWithResponse();
+                // The message will appear in chat automatically
+              }, 500);
+            }
+            
             messageMetadata.set(info.id, {
               role: info.role,
               sessionId: info.sessionID,
@@ -656,26 +660,6 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         }
       } catch {
         // Silent
-      }
-    },
-    
-    // Command handler for /syncthing command
-    "command.execute.before": async ({ input }, output) => {
-      const fs = await import("fs");
-      fs.writeFileSync("/tmp/syncthing-command.log", `ALL COMMANDS: ${input.command}\n`);
-      
-      if (input.command === "syncthing") {
-        fs.appendFileSync("/tmp/syncthing-command.log", "IN SYNCTHING HANDLER\n");
-        
-        // Export all sessions and show user response
-        const count = await exportAllSessionsWithResponse();
-        fs.appendFileSync("/tmp/syncthing-command.log", `Exported: ${count}\n`);
-        
-        // Modify output.parts to show message to user
-        output.parts = [{
-          type: "text",
-          text: `🔄 Synced ${count} sessions to sync-export folder. They will be synced to other machines on next Syncthing sync.`
-        }];
       }
     },
   };
