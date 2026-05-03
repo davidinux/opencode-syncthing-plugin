@@ -4,3 +4,4 @@ dist/
 *.lockb
 .env
 .DS_Store
+.opencode/
