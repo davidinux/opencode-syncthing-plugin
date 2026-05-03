@@ -148,7 +148,7 @@ async function listenForSyncEvents(
 
 // ==================== Session Export/Import Sync ====================
 
-const SYNC_DIR = "/home/davidinux/.local/share/opencode/sync-export";
+const SYNC_DIR = join(homedir(), ".local/share/opencode/sync-export");
 
 /**
  * Export a session using OpenCode CLI and save to sync directory
@@ -163,7 +163,7 @@ async function exportSession(sessionId: string): Promise<boolean> {
     const outputPath = join(SYNC_DIR, `${sessionId}.json`);
     
     // Use helper script with absolute path
-    const helperScript = "/home/davidinux/Projects/github/davidinux/opencode-syncthing-plugin/export-helper.sh";
+    const helperScript = join(homedir(), "Projects/github/davidinux/opencode-syncthing-plugin/sync-export.sh");
     
     if (!existsSync(helperScript)) {
       return false;
@@ -202,7 +202,7 @@ async function exportSession(sessionId: string): Promise<boolean> {
 async function exportAllSessions() {
   try {
     // Get list of sessions from database
-    const cmd = `sqlite3 -json /home/davidinux/.local/share/opencode/opencode.db "SELECT id FROM session ORDER BY time_updated DESC LIMIT 20;"`;
+    const cmd = `sqlite3 -json ${homedir()}/.local/share/opencode/opencode.db "SELECT id FROM session ORDER BY time_updated DESC LIMIT 20;"`;
     const output = execSync(cmd, { encoding: "utf8", timeout: 10000 });
     
     if (!output.trim()) return;
@@ -215,7 +215,7 @@ async function exportAllSessions() {
       
       // Skip if session already in sync-export or imported
       const inSync = existsSync(join(SYNC_DIR, `${sessionId}.json`));
-      const importedDir = "/home/davidinux/.local/share/opencode/sync-export/imported";
+      const importedDir = join(homedir(), ".local/share/opencode/sync-export/imported");
       const inImported = existsSync(join(importedDir, `${sessionId}.json`));
       
       if (!inSync && !inImported) {
@@ -240,7 +240,7 @@ async function exportAllSessions() {
  */
 async function exportAllSessionsWithResponse(): Promise<number> {
   try {
-    const cmd = `sqlite3 -json /home/davidinux/.local/share/opencode/opencode.db "SELECT id FROM session ORDER BY time_updated DESC LIMIT 20;"`;
+    const cmd = `sqlite3 -json ${homedir()}/.local/share/opencode/opencode.db "SELECT id FROM session ORDER BY time_updated DESC LIMIT 20;"`;
     const output = execSync(cmd, { encoding: "utf8", timeout: 10000 });
     
     if (!output.trim()) return 0;
@@ -252,7 +252,7 @@ async function exportAllSessionsWithResponse(): Promise<number> {
       const sessionId = session.id;
       
       const inSync = existsSync(join(SYNC_DIR, `${sessionId}.json`));
-      const importedDir = "/home/davidinux/.local/share/opencode/sync-export/imported";
+      const importedDir = join(homedir(), ".local/share/opencode/sync-export/imported");
       const inImported = existsSync(join(importedDir, `${sessionId}.json`));
       
       if (!inSync && !inImported) {
@@ -276,12 +276,12 @@ async function importSession(filePath: string): Promise<boolean> {
     const sessionId = basename(filePath, '.json');
     
     // Check if session already exists in database
-    const checkCmd = `sqlite3 /home/davidinux/.local/share/opencode/opencode.db "SELECT id FROM session WHERE id='${sessionId}' LIMIT 1;"`;
+    const checkCmd = `sqlite3 ${homedir()}/.local/share/opencode/opencode.db "SELECT id FROM session WHERE id='${sessionId}' LIMIT 1;"`;
     const exists = execSync(checkCmd, { encoding: "utf8" }).trim();
     
     if (exists) {
       // Session already exists, move to imported folder instead of importing
-      const importedDir = "/home/davidinux/.local/share/opencode/sync-export/imported";
+      const importedDir = join(homedir(), ".local/share/opencode/sync-export/imported");
       if (!existsSync(importedDir)) {
         mkdirSync(importedDir, { recursive: true });
       }
@@ -295,7 +295,7 @@ async function importSession(filePath: string): Promise<boolean> {
     execSync(cmd, { encoding: "utf8" });
     
     // Move to imported folder instead of deleting
-    const importedDir = "/home/davidinux/.local/share/opencode/sync-export/imported";
+    const importedDir = join(homedir(), ".local/share/opencode/sync-export/imported");
     if (!existsSync(importedDir)) {
       mkdirSync(importedDir, { recursive: true });
     }
