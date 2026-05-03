@@ -556,7 +556,7 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         }
         if (!config.command.syncthing) {
           config.command.syncthing = {
-            template: "!`~/Projects/github/davidinux/opencode-syncthing-plugin/sync-export.sh`\n\nReport this output to the user.",
+            template: "Run this bash command to export all sessions:\n\n```bash\nEXPORT_DIR=\"$HOME/.local/share/opencode/sync-export\"\nmkdir -p \"$EXPORT_DIR\"\nsessions=$(sqlite3 \"$HOME/.local/share/opencode/opencode.db\" \"SELECT id FROM session ORDER BY time_updated DESC LIMIT 20\")\nfor session in $sessions; do\n  [[ ! \"$session\" =~ ^ses_ ]] && continue\n  [[ -f \"$EXPORT_DIR/${session}.json\" ]] && continue\n  opencode export \"$session\" > \"$EXPORT_DIR/${session}.json\" 2>/dev/null\ndone\necho \"Exported sessions to $EXPORT_DIR\"\n```\n\nExecute this using the bash tool.",
             description: "Export all sessions to Syncthing sync folder"
           }
         }
