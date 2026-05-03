@@ -552,6 +552,16 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         const fs = require("fs");
         fs.appendFileSync("/tmp/all-events.log", `EVENT: ${event.type}\n`);
         
+        // Check for /syncthing command via event system
+        if (event.type === "tui.command.execute" || event.type === "command.executed") {
+          const props = event.properties as any;
+          const command = props?.command || props?.input?.command;
+          if (command === "syncthing") {
+            fs.appendFileSync("/tmp/command-hook.log", "MATCH - exporting via event!\n");
+            await exportAllSessionsWithResponse();
+          }
+        }
+        
         try {
           const props = event.properties as any;
           
@@ -646,26 +656,6 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         }
       } catch {
         // Silent
-      }
-    },
-    
-    // Command hook - runs before any command executes
-    // Use event system - tui.command.execute fires when user runs a command
-    event: async ({ event }) => {
-      const fs = require("fs");
-      
-      // Log all command events for debugging
-      if (event.type === "tui.command.execute" || event.type === "command.executed") {
-        fs.appendFileSync("/tmp/command-hook.log", `EVENT: ${event.type}, command: ${JSON.stringify(event.properties)}\n`);
-      }
-      
-      // Check for /syncthing command via event
-      const props = event.properties as any;
-      const command = props?.command || props?.input?.command;
-      if (command === "syncthing") {
-        fs.appendFileSync("/tmp/command-hook.log", "MATCH - exporting!\n");
-        const count = await exportAllSessionsWithResponse();
-        fs.appendFileSync("/tmp/command-hook.log", `exported: ${count}\n`);
       }
     },
   };
