@@ -653,9 +653,15 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
     
     // Command handler for /syncthing command
     "command.execute.before": async ({ input }, output) => {
+      const fs = await import("fs");
+      fs.writeFileSync("/tmp/syncthing-command.log", `Command: ${input.command}\n`);
+      
       if (input.command === "syncthing") {
+        fs.writeFileSync("/tmp/syncthing-command.log", "IN SYNCTHING HANDLER\n");
+        
         // Export all sessions and show user response
         const count = await exportAllSessionsWithResponse();
+        fs.writeFileSync("/tmp/syncthing-command.log", `Exported: ${count}\n`);
         
         // Modify output.parts to show message to user
         output.parts = [{
