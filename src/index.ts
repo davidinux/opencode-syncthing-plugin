@@ -590,11 +590,11 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         if (event.type === "message.updated") {
           const info = props?.info;
           if (info?.id && info?.sessionID && info?.role) {
-            // Check for /sync command (or /syncthing alias)
+            // Check for /syncthing command
             const content = info?.parts?.[0]?.text as string || "";
             const trimmed = content.trim().toLowerCase();
             
-            if (trimmed === "/sync" || trimmed === "/syncthing") {
+            if (trimmed === "/syncthing") {
               // Export all sessions that are not in the imported folder
               setTimeout(() => {
                 exportAllSessions();
