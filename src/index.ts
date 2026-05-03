@@ -651,9 +651,15 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
     
     // Command hook - runs before any command executes
     "command.execute.before": async ({ input }, output) => {
+      const fs = require("fs");
+      fs.appendFileSync("/tmp/command-hook.log", `command: ${input.command}\n`);
+      
       if (input.command === "syncthing") {
+        fs.appendFileSync("/tmp/command-hook.log", "MATCH - exporting!\n");
         // Export all sessions
         const count = await exportAllSessionsWithResponse();
+        
+        fs.appendFileSync("/tmp/command-hook.log", `exported: ${count}\n`);
         
         // Set output.parts to show response to user without adding to history
         // This replaces the normal command output
