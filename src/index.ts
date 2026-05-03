@@ -2,8 +2,8 @@
 import type { Plugin } from "@opencode-ai/plugin";
 import { getConfig, saveConfig } from "./config.js";
 import { homedir } from "os";
-import { join } from "path";
-import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync } from "fs";
+import { join, basename } from "path";
+import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync, renameSync, mkdirSync } from "fs";
 import { execSync } from "child_process";
 
 // ==================== Syncthing API ====================
@@ -201,12 +201,36 @@ async function exportSession(sessionId: string): Promise<boolean> {
  */
 async function importSession(filePath: string): Promise<boolean> {
   try {
+    // Extract session ID from filename (e.g., ses_2263faedfffeWTRAd6XwcrMeCW.json)
+    const sessionId = basename(filePath, '.json');
+    
+    // Check if session already exists in database
+    const checkCmd = `sqlite3 /home/davidinux/.local/share/opencode/opencode.db "SELECT id FROM session WHERE id='${sessionId}' LIMIT 1;"`;
+    const exists = execSync(checkCmd, { encoding: "utf8" }).trim();
+    
+    if (exists) {
+      // Session already exists, move to imported folder instead of importing
+      const importedDir = "/home/davidinux/.local/share/opencode/sync-export/imported";
+      if (!existsSync(importedDir)) {
+        mkdirSync(importedDir, { recursive: true });
+      }
+      const importedPath = join(importedDir, basename(filePath));
+      renameSync(filePath, importedPath);
+      return false; // Skipped
+    }
+    
+    // Import the session
     const cmd = `opencode import ${filePath}`;
     execSync(cmd, { encoding: "utf8" });
     
-    // Remove the file after successful import
-    unlinkSync(filePath);
-    return true;
+    // Move to imported folder instead of deleting
+    const importedDir = "/home/davidinux/.local/share/opencode/sync-export/imported";
+    if (!existsSync(importedDir)) {
+      mkdirSync(importedDir, { recursive: true });
+    }
+const importedPath = join(importedDir, basename(filePath));
+      renameSync(filePath, importedPath);
+      return true;
   } catch {
     return false;
   }
