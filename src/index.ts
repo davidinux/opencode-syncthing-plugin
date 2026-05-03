@@ -223,11 +223,6 @@ async function exportAllSessions() {
         if (success) exportedCount++;
       }
     }
-    
-    // Log result
-    const fs = await import("fs");
-    const debugFile = join(homedir(), ".local", "share", "opencode", "plugin-debug.log");
-    fs.appendFileSync(debugFile, `EXPORT ALL: ${exportedCount} sessions exported\n`);
   } catch (e: any) {
     // Log error
     try {
@@ -493,14 +488,6 @@ function scheduleSyncMessage(messageId: string) {
 // ==================== Plugin Export ====================
 
 export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
-  // Verify plugin loaded
-  try {
-    const fs = await import("fs");
-    const path = await import("path");
-    const os = await import("os");
-    fs.writeFileSync(path.join(os.homedir(), ".local", "share", "opencode", "syncthing-plugin-loaded"), new Date().toISOString());
-  } catch {}
-
   // Import any synced sessions on startup (non-blocking)
   setTimeout(() => watchForImportableSessions(), 1000);
 
@@ -521,30 +508,14 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         try {
           const props = event.properties as any;
           
-          // Debug: log all events to see what's happening
-          const fs = await import("fs");
-          const os = await import("os");
-          const debugFile = join(os.homedir(), ".local", "share", "opencode", "plugin-debug.log");
-          fs.appendFileSync(debugFile, `EVENT: ${event.type}\n`);
-
           // Session events (handle created, updated, idle)
           if (
           event.type === "session.created" ||
           event.type === "session.updated" ||
           event.type === "session.idle" ||
           event.type === "session.diff"
-        ) {
-          // Debug log
-          try {
-            const fs = await import("fs");
-            const path = await import("path");
-            const os = await import("os");
-            const props = event.properties as any;
-            const sessionId = props?.sessionID || props?.info?.id || props?.id;
-            fs.appendFileSync(path.join(os.homedir(), ".local", "share", "opencode", "plugin-debug.log"), `SESSION: ${event.type} - ${sessionId}\n`);
-          } catch {}
-
-          // Try multiple ways to get session ID
+) {
+           // Try multiple ways to get session ID
           const props = event.properties as any;
           let sessionId = props?.sessionID || props?.info?.id || props?.id;
           
