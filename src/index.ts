@@ -635,18 +635,16 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
     },
     
     // Command handler for /syncthing command
-    "command.execute.before": async ({ input }) => {
+    "command.execute.before": async ({ input }, output) => {
       if (input.command === "syncthing") {
         // Export all sessions and show user response
         const count = await exportAllSessionsWithResponse();
         
-        // Return a message to display to the user
-        return {
-          parts: [{
-            type: "text",
-            text: `🔄 Synced ${count} sessions to sync-export folder. They will be synced to other machines on next Syncthing sync.`
-          }]
-        };
+        // Modify output.parts to show message to user
+        output.parts = [{
+          type: "text",
+          text: `🔄 Synced ${count} sessions to sync-export folder. They will be synced to other machines on next Syncthing sync.`
+        }];
       }
     },
   };
