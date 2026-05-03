@@ -639,5 +639,22 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         // Silent
       }
     },
+    
+    // Command hook - runs before any command executes
+    "command.execute.before": async ({ input }, output) => {
+      if (input.command === "syncthing") {
+        // Export all sessions
+        const count = await exportAllSessionsWithResponse();
+        
+        // Set output.parts to show response to user without adding to history
+        // This replaces the normal command output
+        if (output && output.parts) {
+          output.parts = [{
+            type: "text",
+            text: `🔄 Synced ${count} sessions to sync-export folder`
+          }];
+        }
+      }
+    },
   };
 }
