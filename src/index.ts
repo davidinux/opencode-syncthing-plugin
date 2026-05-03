@@ -197,6 +197,50 @@ async function exportSession(sessionId: string): Promise<boolean> {
 }
 
 /**
+ * Export all sessions to sync folder
+ */
+async function exportAllSessions() {
+  try {
+    // Get list of sessions from database
+    const cmd = `sqlite3 -json /home/davidinux/.local/share/opencode/opencode.db "SELECT id FROM session ORDER BY time_updated DESC LIMIT 20;"`;
+    const output = execSync(cmd, { encoding: "utf8", timeout: 10000 });
+    
+    if (!output.trim()) return;
+    
+    const sessions = JSON.parse(output);
+    let exportedCount = 0;
+    
+    for (const session of sessions) {
+      const sessionId = session.id;
+      
+      // Skip if session already in sync-export or imported
+      const inSync = existsSync(join(SYNC_DIR, `${sessionId}.json`));
+      const importedDir = "/home/davidinux/.local/share/opencode/sync-export/imported";
+      const inImported = existsSync(join(importedDir, `${sessionId}.json`));
+      
+      if (!inSync && !inImported) {
+        const success = await exportSession(sessionId);
+        if (success) exportedCount++;
+      }
+    }
+    
+    // Log result
+    const fs = await import("fs");
+    const debugFile = join(homedir(), ".local", "share", "opencode", "plugin-debug.log");
+    fs.appendFileSync(debugFile, `EXPORT ALL: ${exportedCount} sessions exported\n`);
+  } catch (e: any) {
+    // Log error
+    try {
+      const fs = await import("fs");
+      fs.writeFileSync(
+        join(homedir(), ".local", "share", "opencode", "export-error.log"),
+        `${new Date().toISOString()}: exportAllSessions error: ${e.message}\n`
+      );
+    } catch {}
+  }
+}
+
+/**
  * Import a session from synced file
  */
 async function importSession(filePath: string): Promise<boolean> {
@@ -542,10 +586,21 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
             }
           }
 
-         // Message metadata
+         // Message metadata & sync commands
         if (event.type === "message.updated") {
           const info = props?.info;
           if (info?.id && info?.sessionID && info?.role) {
+            // Check for /sync or /export command
+            const content = info?.parts?.[0]?.text as string || "";
+            const trimmed = content.trim().toLowerCase();
+            
+            if (trimmed === "/sync" || trimmed === "/export") {
+              // Export all sessions that are not in the imported folder
+              setTimeout(() => {
+                exportAllSessions();
+              }, 500);
+            }
+            
             messageMetadata.set(info.id, {
               role: info.role,
               sessionId: info.sessionID,
