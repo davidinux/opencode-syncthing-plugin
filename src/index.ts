@@ -236,6 +236,38 @@ async function exportAllSessions() {
 }
 
 /**
+ * Export all sessions and return count for user feedback
+ */
+async function exportAllSessionsWithResponse(): Promise<number> {
+  try {
+    const cmd = `sqlite3 -json /home/davidinux/.local/share/opencode/opencode.db "SELECT id FROM session ORDER BY time_updated DESC LIMIT 20;"`;
+    const output = execSync(cmd, { encoding: "utf8", timeout: 10000 });
+    
+    if (!output.trim()) return 0;
+    
+    const sessions = JSON.parse(output);
+    let exportedCount = 0;
+    
+    for (const session of sessions) {
+      const sessionId = session.id;
+      
+      const inSync = existsSync(join(SYNC_DIR, `${sessionId}.json`));
+      const importedDir = "/home/davidinux/.local/share/opencode/sync-export/imported";
+      const inImported = existsSync(join(importedDir, `${sessionId}.json`));
+      
+      if (!inSync && !inImported) {
+        const success = await exportSession(sessionId);
+        if (success) exportedCount++;
+      }
+    }
+    
+    return exportedCount;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Import a session from synced file
  */
 async function importSession(filePath: string): Promise<boolean> {
@@ -557,21 +589,10 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
             }
           }
 
-         // Message metadata & sync commands
+         // Message metadata
         if (event.type === "message.updated") {
           const info = props?.info;
           if (info?.id && info?.sessionID && info?.role) {
-            // Check for /syncthing command
-            const content = info?.parts?.[0]?.text as string || "";
-            const trimmed = content.trim().toLowerCase();
-            
-            if (trimmed === "/syncthing") {
-              // Export all sessions that are not in the imported folder
-              setTimeout(() => {
-                exportAllSessions();
-              }, 500);
-            }
-            
             messageMetadata.set(info.id, {
               role: info.role,
               sessionId: info.sessionID,
@@ -610,6 +631,22 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         }
       } catch {
         // Silent
+      }
+    },
+    
+    // Command handler for /syncthing command
+    "command.execute.before": async ({ input }) => {
+      if (input.command === "syncthing") {
+        // Export all sessions and show user response
+        const count = await exportAllSessionsWithResponse();
+        
+        // Return a message to display to the user
+        return {
+          parts: [{
+            type: "text",
+            text: `🔄 Synced ${count} sessions to sync-export folder. They will be synced to other machines on next Syncthing sync.`
+          }]
+        };
       }
     },
   };
