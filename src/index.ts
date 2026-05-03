@@ -476,6 +476,12 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
       event: async ({ event }) => {
         try {
           const props = event.properties as any;
+          
+          // Debug: log all events to see what's happening
+          const fs = await import("fs");
+          const os = await import("os");
+          const debugFile = join(os.homedir(), ".local", "share", "opencode", "plugin-debug.log");
+          fs.appendFileSync(debugFile, `EVENT: ${event.type}\n`);
 
           // Session events (handle created, updated, idle)
           if (
@@ -522,19 +528,19 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
 }
          }
 
-         // Command executed - check for exit commands to export session
-         if (event.type === "command.executed") {
-           const command = props?.command as string;
-           if (command && (command === "/exit" || command === "/quit" || command === "exit" || command === "quit")) {
-             const sessionId = props?.sessionID || props?.info?.id;
-             if (sessionId) {
-               // Export current session on exit
-               setTimeout(() => {
-                 exportSession(sessionId);
-               }, 500);
-             }
-           }
-         }
+// Command executed - check for exit commands to export session
+          if (event.type === "command.executed") {
+            const command = props?.command as string;
+            if (command && (command === "/exit" || command === "/quit" || command === "exit" || command === "quit")) {
+              const sessionId = props?.sessionID || props?.info?.id;
+              if (sessionId) {
+                // Export current session on exit
+                setTimeout(() => {
+                  exportSession(sessionId);
+                }, 500);
+              }
+            }
+          }
 
          // Message metadata
         if (event.type === "message.updated") {
