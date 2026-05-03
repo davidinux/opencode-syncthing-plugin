@@ -660,5 +660,23 @@ export const OpenCodeSyncthingPlugin: Plugin = async ({ client }) => {
         // Silent
       }
     },
+    
+    tool: () => [
+      {
+        name: "syncthing",
+        description: "Export all sessions to Syncthing sync folder",
+        parameters: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+        handler: async () => {
+          const count = await exportAllSessionsWithResponse();
+          return {
+            text: `🔄 Synced ${count} sessions to sync-export folder`,
+          };
+        },
+      },
+    ],
   };
 }
