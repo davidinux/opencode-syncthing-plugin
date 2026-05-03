@@ -29,6 +29,13 @@ npm run build
 npm install -g .  # Optional: install globally
 ```
 
+### Configure OpenCode to use the plugin
+
+```bash
+# Install globally (recommended - uses ~/.config/opencode/opencode.jsonc)
+opencode plugin --global /path/to/opencode-syncthing-plugin
+```
+
 **To run CLI commands from source (without global install):**
 
 ```bash
