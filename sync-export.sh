@@ -5,7 +5,7 @@ EXPORT_DIR="$HOME/.local/share/opencode/sync-export"
 mkdir -p "$EXPORT_DIR"
 
 # Get all session IDs from database
-sessions=$(sqlite3 "$HOME/.local/share/opencode/opencode.db" "SELECT id FROM session ORDER BY updated DESC LIMIT 20")
+sessions=$(sqlite3 "$HOME/.local/share/opencode/opencode.db" "SELECT id FROM session ORDER BY time_updated DESC LIMIT 20")
 
 count=0
 for session in $sessions; do
